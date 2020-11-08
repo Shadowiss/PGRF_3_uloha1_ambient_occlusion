@@ -28,6 +28,8 @@ public class Renderer extends AbstractRenderer {
     private OGLRenderTarget renderTarget;
 
     private int displayMode=0;
+    private float object = 1;
+    private int triangleMode = 0;
 
     @Override
     public void init() {
@@ -49,7 +51,7 @@ public class Renderer extends AbstractRenderer {
         locView2 = glGetUniformLocation(shaderProgram2, "view");
         locProjection2 = glGetUniformLocation(shaderProgram2, "projection");
 
-        buffers = GridFactory.generateGrid(100, 100);
+        buffers = GridFactory.generateGrid(50, 50);
 
 //        camera = new Camera(
 //                new Vec3D(6, 6, 5),
@@ -58,10 +60,14 @@ public class Renderer extends AbstractRenderer {
 //                1,
 //                true
 //        );
+//        camera = new Camera()
+//                .withPosition(new Vec3D(2.5, 4.5, 5)) // pozice pozorovatele
+//                .withAzimuth(5 / 4f * Math.PI) // otočení do strany o (180+45) stupňů v radiánech
+//                .withZenith(-1 / 5f * Math.PI); // otočení (90/5) stupňů dolů
         camera = new Camera()
-                .withPosition(new Vec3D(2, 2, 2)) // pozice pozorovatele
-                .withAzimuth(5 / 4f * Math.PI) // otočení do strany o (180+45) stupňů v radiánech
-                .withZenith(-1 / 5f * Math.PI); // otočení (90/5) stupňů dolů
+                .withPosition(new Vec3D(4, 6, 6))
+                .withAzimuth(Math.PI * 1.25)
+                .withZenith(Math.PI * -0.125);
 
         cameraLight = new Camera().withPosition(new Vec3D(-5, -3, -1));
 
@@ -72,7 +78,7 @@ public class Renderer extends AbstractRenderer {
 //        );
 
         projection = new Mat4PerspRH(Math.PI / 3, 600 / 800f, 1, 20);
-//        projection = new Mat4OrthoRH(10, 7, 1, 20);
+        //projection = new Mat4OrthoRH(10, 7, 1, 20);
 
         try {
             texture1 = new OGLTexture2D("./textures/bricks.jpg");
@@ -88,10 +94,15 @@ public class Renderer extends AbstractRenderer {
     @Override
     public void display() {
         glEnable(GL_DEPTH_TEST);
-        if (displayMode == 0) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        } else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//        if (displayMode == 1) {
+//            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//        } else {
+//            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//        }
+        switch (displayMode){
+            case 0 -> glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            case 1 -> glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            case 2 -> glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         }
 
         render1();
@@ -115,11 +126,14 @@ public class Renderer extends AbstractRenderer {
         glUniformMatrix4fv(locView, false, camera.getViewMatrix().floatArray());
         glUniformMatrix4fv(locProjection, false, projection.floatArray());
 
-        //texture1.bind(shaderProgram1, "texture1", 0);
+        texture1.bind(shaderProgram1, "texture1", 0);
 
-        glUniform1f(locTemp, 1.0f);
-        buffers.draw(GL_TRIANGLES, shaderProgram1);
-        //buffers.draw(GL_TRIANGLE_STRIP, shaderProgram1);
+        glUniform1f(locTemp, object);
+
+        switch (triangleMode){
+            case 0 -> buffers.draw(GL_TRIANGLES, shaderProgram1);
+            case 1 -> buffers.draw(GL_TRIANGLE_STRIP, shaderProgram1);
+        }
     }
 
     private void render2() {
@@ -141,10 +155,10 @@ public class Renderer extends AbstractRenderer {
         buffers.draw(GL_TRIANGLES, shaderProgram2);
     }
 
-//    @Override
-//    public GLFWWindowSizeCallback getWsCallback() {
-//        return null; // FIXME
-//    }
+    @Override
+    public GLFWWindowSizeCallback getWsCallback() {
+        return WsCallback;
+    }
 
     @Override
     public GLFWCursorPosCallback getCursorCallback() {
@@ -163,6 +177,20 @@ public class Renderer extends AbstractRenderer {
 
     private double oldMx, oldMy;
     private boolean mousePressed;
+
+    private final GLFWWindowSizeCallback WsCallback = new GLFWWindowSizeCallback() {
+        @Override
+        public void invoke(long window, int w, int h) {
+            if (w > 0 && h > 0 &&
+                    (w != width || h != height)) {
+                width = w;
+                height = h;
+                projection = new Mat4PerspRH(Math.PI / 4, height / (double) width, 0.1, 100.0);
+                if (textRenderer != null)
+                    textRenderer.resize(width, height);
+            }
+        }
+    };
 
     private final GLFWCursorPosCallback cursorPosCallback = new GLFWCursorPosCallback() {
         @Override
@@ -201,6 +229,21 @@ public class Renderer extends AbstractRenderer {
                     case GLFW_KEY_S -> camera = camera.backward(0.1);
                     case GLFW_KEY_R -> camera = camera.up(0.1);
                     case GLFW_KEY_F -> camera = camera.down(0.1);
+                    case GLFW_KEY_1 -> {
+                        if(displayMode == 2)
+                            displayMode=0;
+                        else{displayMode += 1;}
+                    }
+                    case GLFW_KEY_O -> {
+                        if(object == 2.0f)
+                            object = 1.0f;
+                        else{object += 1.0f;}
+                    }
+                    case GLFW_KEY_T -> {
+                        if(triangleMode == 1)
+                            triangleMode = 0;
+                        else{triangleMode += 1;}
+                    }
                 }
             }
         }
