@@ -10,6 +10,7 @@ uniform sampler2D texture1;
 out vec4 outColor;// output from the fragment shader
 
 void main() {
+    // světlo
     vec4 ambient = vec4(vec3(0.2), 1.0);
 
     float NdotL = max(0, dot(normalize(normal), normalize(light)));
@@ -18,8 +19,6 @@ void main() {
     vec3 halfD = normalize(light + viewDirection);
     float NdotH = dot(normalize(normal), halfD);
     vec4 specular = vec4(pow(NdotH, 16) * vec3(1), 1);
-
-    // TODO specular
 
     vec4 finalColor = ambient + diffuse + specular;
     vec4 textureColor = texture(texture1, texCoord);

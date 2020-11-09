@@ -16,7 +16,7 @@ public class Renderer extends AbstractRenderer {
     private int shaderProgram1, shaderProgram2;
     private OGLBuffers buffers;
 
-    private int locView, locProjection, locTemp, locLightPos;
+    private int locView, locProjection, locTemp, locLightPos, locTime;
     private int locView2, locProjection2;
 
     private Camera camera;
@@ -30,6 +30,9 @@ public class Renderer extends AbstractRenderer {
     private int displayMode=0;
     private float object = 1;
     private int triangleMode = 0;
+    private float time = 1;
+    private double difftime=0.01;
+    private int animation = 1;
 
     @Override
     public void init() {
@@ -51,7 +54,9 @@ public class Renderer extends AbstractRenderer {
         locView2 = glGetUniformLocation(shaderProgram2, "view");
         locProjection2 = glGetUniformLocation(shaderProgram2, "projection");
 
-        buffers = GridFactory.generateGrid(50, 50);
+        locTime = glGetUniformLocation(shaderProgram1, "time");
+
+        buffers = GridFactory.generateGrid(50, 50, triangleMode);
 
 //        camera = new Camera(
 //                new Vec3D(6, 6, 5),
@@ -94,15 +99,22 @@ public class Renderer extends AbstractRenderer {
     @Override
     public void display() {
         glEnable(GL_DEPTH_TEST);
-//        if (displayMode == 1) {
-//            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//        } else {
-//            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-//        }
+
         switch (displayMode){
             case 0 -> glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             case 1 -> glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             case 2 -> glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+        }
+
+        //time for animation
+        if(animation == 1) {
+            if (time > 2.0) {
+                difftime = (-0.01);
+            }
+            if (time < 1.0) {
+                difftime = 0.01;
+            }
+            time += difftime;
         }
 
         render1();
@@ -122,6 +134,7 @@ public class Renderer extends AbstractRenderer {
         glClearColor(0.4f, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glUniform1f(locTime, time);
         glUniform3fv(locLightPos, ToFloatArray.convert(cameraLight.getPosition()));
         glUniformMatrix4fv(locView, false, camera.getViewMatrix().floatArray());
         glUniformMatrix4fv(locProjection, false, projection.floatArray());
@@ -233,6 +246,11 @@ public class Renderer extends AbstractRenderer {
                         if(displayMode == 2)
                             displayMode=0;
                         else{displayMode += 1;}
+                    }
+                    case GLFW_KEY_2 -> {
+                        if(animation == 1)
+                            animation=0;
+                        else{animation += 1;}
                     }
                     case GLFW_KEY_O -> {
                         if(object == 2.0f)
