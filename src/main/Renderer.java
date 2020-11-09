@@ -28,11 +28,12 @@ public class Renderer extends AbstractRenderer {
     private OGLRenderTarget renderTarget;
 
     private int displayMode=0;
-    private float object = 1;
+    private int object = 1;
     private int triangleMode = 0;
     private float time = 1;
     private double difftime=0.01;
     private int animation = 1;
+    private int cameraMode = 0;
 
     @Override
     public void init() {
@@ -82,8 +83,10 @@ public class Renderer extends AbstractRenderer {
 //                new Vec3D(0, 0, 1)
 //        );
 
-        projection = new Mat4PerspRH(Math.PI / 3, 600 / 800f, 1, 20);
-        //projection = new Mat4OrthoRH(10, 7, 1, 20);
+        switch (cameraMode) {
+            case 0 -> projection = new Mat4PerspRH(Math.PI / 3, 600 / 800f, 1, 20);
+            case 1 -> projection = new Mat4OrthoRH(10, 7, 1, 20);
+        }
 
         try {
             texture1 = new OGLTexture2D("./textures/bricks.jpg");
@@ -139,9 +142,9 @@ public class Renderer extends AbstractRenderer {
         glUniformMatrix4fv(locView, false, camera.getViewMatrix().floatArray());
         glUniformMatrix4fv(locProjection, false, projection.floatArray());
 
-        texture1.bind(shaderProgram1, "texture1", 0);
+        //texture1.bind(shaderProgram1, "texture1", 0);
 
-        glUniform1f(locTemp, object);
+        glUniform1i(locTemp, object);
 
         switch (triangleMode){
             case 0 -> buffers.draw(GL_TRIANGLES, shaderProgram1);
@@ -253,14 +256,23 @@ public class Renderer extends AbstractRenderer {
                         else{animation += 1;}
                     }
                     case GLFW_KEY_O -> {
-                        if(object == 2.0f)
-                            object = 1.0f;
-                        else{object += 1.0f;}
+                        if(object == 6)
+                            object = 1;
+                        else{object += 1;}
                     }
                     case GLFW_KEY_T -> {
-                        if(triangleMode == 1)
+                        if(triangleMode == 1) {
                             triangleMode = 0;
-                        else{triangleMode += 1;}
+                            buffers.draw(GL_TRIANGLES, triangleMode);
+                        }
+                        else{triangleMode += 1;
+                            buffers.draw(GL_TRIANGLE_STRIP, triangleMode);
+                            }
+                    }
+                    case GLFW_KEY_C -> {
+                        if(cameraMode == 1)
+                            cameraMode = 0;
+                        else{cameraMode += 1;}
                     }
                 }
             }

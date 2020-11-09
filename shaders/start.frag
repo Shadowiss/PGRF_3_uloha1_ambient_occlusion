@@ -5,6 +5,7 @@ in vec3 light;
 in vec3 viewDirection;
 in vec3 normal;
 
+
 uniform sampler2D texture1;
 
 out vec4 outColor;// output from the fragment shader
