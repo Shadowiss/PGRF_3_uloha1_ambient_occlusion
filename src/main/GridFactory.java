@@ -25,6 +25,8 @@ public class GridFactory {
             }
         }
 
+
+
         int[] ib = new int[(a - 1) * (b - 1) * 2 * 3];
         int index2 = 0;
 
@@ -32,12 +34,11 @@ public class GridFactory {
             int offset = r * a;
             for (int c = 0; c < a - 1; c++) {
                 ib[index2++] = offset + c;
-                ib[index2++] = offset + c + a;
-                ib[index2++] = offset + c + 1;
-
                 ib[index2++] = offset + c + 1;
                 ib[index2++] = offset + c + a;
+                ib[index2++] = offset + c + 1;
                 ib[index2++] = offset + c + 1 + a;
+                ib[index2++] = offset + c + a;
 
             }
         }
@@ -51,9 +52,11 @@ public class GridFactory {
                 ibs[index3++] = offset + c;
                 ibs[index3++] = offset + c + a;
             }
-            ibs[index3++] = offset + a-1;
             ibs[index3++] = offset + a-1 + a;
+            ibs[index3++] = offset + a-1;
+
         }
+
 
         OGLBuffers.Attrib[] attributes = {
              new OGLBuffers.Attrib("inPosition", 2) // 2 floats per vertex

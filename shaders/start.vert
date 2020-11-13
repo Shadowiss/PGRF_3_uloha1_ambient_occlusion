@@ -129,34 +129,35 @@ vec3 functionCyl2(vec2 pos)
 
 void main() {
     texCoord = inPosition;
-    //    vec2 position = vec2(inPosition.x * 2 - 1, inPosition.y * 2 - 1);
+    //vec2 position = vec2(inPosition.x * 2 - 1, inPosition.y * 2 - 1);
     vec2 position = inPosition * 2 - 1;
     vec3 pos3;
 
-//    vec3 normal;
-    if (temp == 1) {
-        //pos3 = getSphere(position);
-        //normal = getNormalSphere2(position);
-        normal = getSphere(position);
-    } else if (temp == 2) {
-        // jiné těleso
-        //pos3 = functionC(position);
-        normal = functionC(position);
+////    vec3 normal;
+//    if (temp == 1) {
+//        //pos3 = getSphere(position);
+//        //normal = getNormalSphere2(position);
+//        normal = getSphere(position);
+//    } else if (temp == 2) {
+//        // jiné těleso
+//        //pos3 = functionC(position);
+//        normal = functionC(position);
+//    }
 
-    }
+
     switch(temp){
         case 1:  normal = getSphere(position);
                  break;
         case 2:  normal = functionC(position);
                  break;
         case 3:  normal = functionCyl(position);
-        break;
+                 break;
         case 4:  normal = functionCyl2(position);
-        break;
+                 break;
         case 5:  normal = functionS2(position);
-        break;
+                 break;
         case 6:  normal = functionCM(position);
-        break;
+                 break;
 
     }
 

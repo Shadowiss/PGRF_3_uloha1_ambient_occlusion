@@ -25,7 +25,7 @@ void main() {
     vec4 textureColor = texture(texture1, texCoord);
     vec4 color = vec4(0.0,1.0,0.0,1.0);
 
-    outColor = finalColor * color; //textureColor;
+    outColor = finalColor * color; // * textureColor;
 
     // outColor = vec4(1.0, gl_FragCoord.y / 600f, 0.0, 1.0);
 }
