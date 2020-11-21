@@ -16,9 +16,9 @@ public class Renderer extends AbstractRenderer {
     //private int shaderProgram1, shaderProgram2;
     private OGLBuffers buffers, quad;
 
-    private int sceneProgram, ssaoProgram, shadeProgram;
+    private int sceneProgram, ssaoProgram, shadeProgram, objProgram;
     private int locSceneView, locSceneProjection, locSceneTemp,
-            locSsaoProjection, locShadeView, locSceneTime, locShadeLight;
+            locSsaoProjection, locShadeView, locSceneTime, locShadeLight, locObjMat, locSceneTime2, locLightRotY;
 
 //    private int locView, locProjection, locTemp, locLightPos, locTime;
 //    private int locView2, locProjection2;
@@ -42,8 +42,17 @@ public class Renderer extends AbstractRenderer {
     private int cameraMode = 0;
     private int mode = 0;
     private int lightMode = 0;
+    private int ducky = 0;
+    private float radians = 0;
 
-    //private OGLModelOBJ model;
+    private OGLModelOBJ model;
+    Mat4 swapYZ = new Mat4(new double[] {
+            1, 0, 0, 0,
+            0, 0, 1, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+    });
+    private Mat3RotY rotY = new Mat3RotY(Math.toRadians(radians));
 
     @Override
     public void init() {
@@ -67,54 +76,31 @@ public class Renderer extends AbstractRenderer {
         shadeProgram = ShaderUtils.loadProgram("/shade");
         locShadeView = glGetUniformLocation(shadeProgram, "view");
         locShadeLight = glGetUniformLocation(shadeProgram, "lightMode");
+        locSceneTime2 = glGetUniformLocation(shadeProgram, "time");
+        locLightRotY = glGetUniformLocation(shadeProgram, "rotY");
 
-//        shaderProgram1 = ShaderUtils.loadProgram("/start");
-//        shaderProgram2 = ShaderUtils.loadProgram("/postProc");
-//
-//        locLightPos = glGetUniformLocation(shaderProgram1, "lightPos");
-//        locView = glGetUniformLocation(shaderProgram1, "view");
-//        locProjection = glGetUniformLocation(shaderProgram1, "projection");
-//        locTemp = glGetUniformLocation(shaderProgram1, "temp");
-//
-//        locView2 = glGetUniformLocation(shaderProgram2, "view");
-//        locProjection2 = glGetUniformLocation(shaderProgram2, "projection");
-//
-//        locTime = glGetUniformLocation(shaderProgram1, "time");
+        objProgram = ShaderUtils.loadProgram("/ducky");
+        locObjMat = glGetUniformLocation(objProgram, "mat");
 
-        buffers = GridFactory.generateGrid(50,50, triangleMode);
         quad = QuadFactory.getQuad();
 
-//        camera = new Camera(
-//                new Vec3D(6, 6, 5),
-//                5 / 4f * Math.PI,
-//                -1 / 5f * Math.PI,
-//                1,
-//                true
-//        );
         camera = new Camera()
                 .withPosition(new Vec3D(2, 2, 2)) // pozice pozorovatele
                 .withAzimuth(5 / 4f * Math.PI) // otočení do strany o (180+45) stupňů v radiánech
                 .withZenith(-1 / 5f * Math.PI); // otočení (90/5) stupňů dolů
-//        camera = new Camera()
-//                .withPosition(new Vec3D(4, 6, 6))
-//                .withAzimuth(Math.PI * 1.25)
-//                .withZenith(Math.PI * -0.125);
 
         cameraLight = new Camera().withPosition(new Vec3D(-5, -3, -1));
 
-//        view = new Mat4ViewRH(
-//                new Vec3D(4, 4, 4),
-//                new Vec3D(-1, -1, -1),
-//                new Vec3D(0, 0, 1)
-//        );
 
 
 
         try {
             texture1 = new OGLTexture2D("./textures/mosaic.jpg");
+            model = new OGLModelOBJ("/obj/ducky.obj");
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //buffers = model.getBuffers();
 
         viewer = new OGLTexture2D.Viewer();
 
@@ -129,13 +115,10 @@ public class Renderer extends AbstractRenderer {
     @Override
     public void display() {
         glEnable(GL_DEPTH_TEST);
-
-
         switch (cameraMode) {
             case 0 -> projection = new Mat4PerspRH(Math.PI / 3, 600 / 800f, 1, 20);
             case 1 -> projection = new Mat4OrthoRH(10, 7, 1, 20);
         }
-
         //time for animation
         if(animation == 1) {
             if (time > 2.0) {
@@ -146,14 +129,16 @@ public class Renderer extends AbstractRenderer {
             }
             time += difftime;
         }
-        if(triangleMode == 0) {
-            buffers = GridFactory.generateGrid(50, 50, triangleMode);
-            buffers.draw(GL_TRIANGLES, sceneProgram);
-        }else{
-            buffers = GridFactory.generateGrid(50, 50, triangleMode);
-            buffers.draw(GL_TRIANGLE_STRIP, sceneProgram);
+        if(animation == 1) {
+            if (radians > 360) {
+                radians = 0;
+            }else{
+                radians += 0.1;
+            }
+
         }
 
+        setTriangleMode();
         renderScene();
         renderSSAO();
         renderFinal();
@@ -164,12 +149,16 @@ public class Renderer extends AbstractRenderer {
         viewer.view(sceneRT.getDepthTexture(), -0.5, -1, 0.5);
         viewer.view(ssaoRT.getColorTexture(), -1, 0.5, 0.5);
 
-        textRenderer.addStr2D(LwjglWindow.WIDTH - 90, LwjglWindow.HEIGHT - 3, "PGRF");
+        textRenderer.addStr2D(LwjglWindow.WIDTH - 190, LwjglWindow.HEIGHT - 3, "PGRF - Jirasek Jiri 2020");
     }
 
     private void renderScene() {
-        glUseProgram(sceneProgram);
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        switch (ducky){
+            case 0 -> glUseProgram(sceneProgram);
+            case 1 -> glUseProgram(objProgram);
+        }
+        //glUseProgram(objProgram);
+
         switch (displayMode){
             case 0 -> glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             case 1 -> glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -182,34 +171,28 @@ public class Renderer extends AbstractRenderer {
         glUniformMatrix4fv(locSceneView, false, camera.getViewMatrix().floatArray());
         glUniformMatrix4fv(locSceneProjection, false, projection.floatArray());
 
-        texture1.bind(sceneProgram, "texture1", 0);
+        glUniformMatrix4fv(locObjMat, false,
+                ToFloatArray.convert(swapYZ.mul(camera.getViewMatrix()).mul(projection)));
 
-        glUniform1f(locSceneTime, time);
+        switch (ducky) {
+            case 1 ->{buffers = model.getBuffers();
+                buffers.draw(model.getTopology(), objProgram);}
+            case 0 ->{
 
-        glUniform1i(locSceneTemp, object);
-        buffers.draw(GL_TRIANGLES, sceneProgram);
-        if(mode == 1) {
-            glUniform1i(locSceneTemp, 8);
-            buffers.draw(GL_TRIANGLES, sceneProgram);
-            glUniform1i(locSceneTemp, 9);
-            buffers.draw(GL_TRIANGLES, sceneProgram);
+                glUniform1f(locSceneTime, time);
+                glUniform1i(locSceneTemp, object);
+                setTriangleMode();
+                glUniform1i(locSceneTemp, 10);
+                setTriangleMode();
+                texture1.bind(sceneProgram, "texture1", 0);
+                if(mode == 1) {
+                    glUniform1i(locSceneTemp, 8);
+                    setTriangleMode();
+                    glUniform1i(locSceneTemp, 9);
+                    setTriangleMode();
+                }
+            }
         }
-//        switch (mode){
-//            case 0:
-//                glUniform1i(locSceneTemp, object);
-//                buffers.draw(GL_TRIANGLES, sceneProgram);
-//            case 1:
-//                glUniform1i(locSceneTemp, object);
-//                buffers.draw(GL_TRIANGLES, sceneProgram);
-//                glUniform1i(locSceneTemp, 7);
-//                buffers.draw(GL_TRIANGLES, sceneProgram);
-//                glUniform1i(locSceneTemp, 8);
-//                buffers.draw(GL_TRIANGLES, sceneProgram);
-//            case 2:
-//                model = new OGLModelOBJ("/obj/ducky.obj");
-//                buffers = model.getBuffers();
-//                buffers.draw(GL_TRIANGLES, sceneProgram);
-//        }
     }
 
     private void renderSSAO() {
@@ -251,6 +234,13 @@ public class Renderer extends AbstractRenderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUniform1i(locShadeLight, lightMode);
+        rotY = new Mat3RotY(radians);
+
+        glUniformMatrix3fv(locLightRotY,false, rotY.floatArray());
+        glUniform1f(locSceneTime2, time);
+        glUniform1i(locShadeLight, lightMode);
+        //texture1.bind(shadeProgram, "texture1");
+
 
         sceneRT.bindColorTexture(shadeProgram, "positionTexture", 0, 0);
         sceneRT.bindColorTexture(shadeProgram, "normalTexture", 1, 1);
@@ -258,59 +248,20 @@ public class Renderer extends AbstractRenderer {
         ssaoRT.bindColorTexture(shadeProgram, "ssaoTexture", 3, 0);
         sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4,3);
 
+
         glUniformMatrix4fv(locShadeView, false, camera.getViewMatrix().floatArray());
 
         quad.draw(GL_TRIANGLES, shadeProgram);
     }
 
-//    private void render1() {
-//        glUseProgram(shaderProgram1);
-//
-//        renderTarget.bind();
-//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//        glClearColor(0.4f, 0, 0, 1);
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//
-//        glUniform1f(locTime, time);
-//        glUniform3fv(locLightPos, ToFloatArray.convert(cameraLight.getPosition()));
-//        glUniformMatrix4fv(locView, false, camera.getViewMatrix().floatArray());
-//        glUniformMatrix4fv(locProjection, false, projection.floatArray());
-//
-//        //texture1.bind(shaderProgram1, "texture1", 0);
-//
-//        glUniform1i(locTemp, object);
-//
-//        buffers.draw(GL_TRIANGLES, shaderProgram1);
-//
-//        if(mode ==1 ) {
-//            glUniform1i(locTemp, 2);
-//            buffers.draw(GL_TRIANGLES, shaderProgram1);
-////            texture1.bind(shaderProgram1, "texture1", 0);
-////            viewer.view(texture1, -1, -1, 0.5);
-////            viewer.view(renderTarget.getColorTexture(), -1, -0.5, 0.5);
-//        }
-//
-//
-//    }
-//
-//    private void render2() {
-//        glUseProgram(shaderProgram2);
-//        renderTarget.bind();
-//
-//        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//        glClearColor(0, 0.6f, 0, 1);
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//
-//        glViewport(0, 0, LwjglWindow.WIDTH, LwjglWindow.HEIGHT);
-//
-//        glUniformMatrix4fv(locView2, false, camera.getViewMatrix().floatArray());
-//        glUniformMatrix4fv(locProjection2, false, projection.floatArray());
-//
-//        //texture1.bind(shaderProgram2, "texture1", 0);
-//        renderTarget.getColorTexture().bind(shaderProgram2, "texture1", 0);
-//
-//        buffers.draw(GL_TRIANGLES, shaderProgram2);
-//    }
+    private void setTriangleMode(){
+        switch (triangleMode){
+            case 0 -> {buffers = GridFactory.generateGrid(50, 50, triangleMode);
+                buffers.draw(GL_TRIANGLES, sceneProgram);}
+            case 1 ->{ buffers = GridFactory.generateGrid(50, 50, triangleMode);
+                buffers.draw(GL_TRIANGLE_STRIP, sceneProgram);}
+        }
+    }
 
     @Override
     public GLFWWindowSizeCallback getWsCallback() {
@@ -404,12 +355,8 @@ public class Renderer extends AbstractRenderer {
                     case GLFW_KEY_T -> {
                         if(triangleMode == 1) {
                             triangleMode = 0;
-//                            buffers = GridFactory.generateGrid(50, 50, triangleMode);
-//                            buffers.draw(GL_TRIANGLES, triangleMode);
                         }
                         else{triangleMode += 1;
-//                            buffers = GridFactory.generateGrid(50, 50, triangleMode);
-//                            buffers.draw(GL_TRIANGLE_STRIP, triangleMode);
                             }
                     }
                     case GLFW_KEY_C -> {
@@ -423,9 +370,14 @@ public class Renderer extends AbstractRenderer {
                         else{mode += 1;}
                     }
                     case GLFW_KEY_X -> {
-                        if(lightMode == 3)
+                        if(lightMode == 4)
                             lightMode = 0;
                         else{lightMode += 1;}
+                    }
+                    case GLFW_KEY_Z -> {
+                        if(ducky == 1)
+                            ducky = 0;
+                        else{ducky += 1;}
                     }
                 }
             }

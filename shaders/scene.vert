@@ -220,10 +220,15 @@ void main() {
         pos3 = getPlane2(position);
         normal = getPlane2Normal(position);
         break;
-
+        case 10:
+        pos3 = getSphere(position);
+        pos3 =  vec3(pos3.x + 100, pos3.y, pos3.z);
+        normal = getSphereNormal(position);
+        break;
     }
 
-    vec4 pos4 = vec4(pos3 * time , 1.0);
+    //vec4 pos4 = vec4(pos3 * time , 1.0);
+    vec4 pos4 = vec4(pos3, 1.0);
     gl_Position = projection * view * pos4;
 
 //    vec4 pos4 = vec4(pos3, 1.0);

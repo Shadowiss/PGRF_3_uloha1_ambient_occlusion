@@ -39,22 +39,38 @@ public class GridFactory {
                 ib[index2++] = offset + c + 1;
                 ib[index2++] = offset + c + 1 + a;
                 ib[index2++] = offset + c + a;
-
             }
         }
 
-        int[] ibs = new int[(2*a)*(b-1)];
+        int[] ibs = new int[(2*a)*(b)-2];
         int index3 = 0;
+        int k;
 
-        for (int r = 0; r < b -1; r++) {
-            int offset = r * a;
-            for (int c = 0; c < a-1; c++) {
-                ibs[index3++] = offset + c;
-                ibs[index3++] = offset + c + a;
+        for (int r = 0; r < b-1; r++) {
+            k = r * a;
+            for (int c = 0; c < a; c++) {
+                if (r % 2 == 0) {
+                    if (c == a-1) {
+                        ibs[index3++] = k + c;
+                        ibs[index3++] = k + (b) + c;
+                        ibs[index3++] = k + (b) + c;
+                        ibs[index3++] = k + (b) + c;
+                    } else {
+                        ibs[index3++] = k + c;
+                        ibs[index3++] = k + (b) + c;
+                    }
+                } else {
+                    if (c == a-1) {
+                        ibs[index3++] = k +b;
+                        ibs[index3++] = k ;
+                        ibs[index3++] = k;
+                        ibs[index3++] = k;
+                    } else {
+                        ibs[index3++] = k + 2 * (a) - 1 - c;
+                        ibs[index3++] = (k-1) + a - c;
+                    }
+                }
             }
-            ibs[index3++] = offset + a-1 + a;
-            ibs[index3++] = offset + a-1;
-
         }
 
 
