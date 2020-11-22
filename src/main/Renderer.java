@@ -179,7 +179,6 @@ public class Renderer extends AbstractRenderer {
             case 0 -> {
 
                 texture1.bind(sceneProgram, "texture1", 0);
-//                sceneRT.getColorTexture().bind(sceneProgram, "texture1", 5);
                 setTriangleMode();
                 glUniform1i(locSceneTemp, 10);
                 setTriangleMode();
@@ -242,7 +241,7 @@ public class Renderer extends AbstractRenderer {
         sceneRT.bindColorTexture(shadeProgram, "normalTexture", 1, 1);
         sceneRT.bindDepthTexture(shadeProgram, "depthTexture", 2);
         ssaoRT.bindColorTexture(shadeProgram, "ssaoTexture", 3, 0);
-        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4, 4);
+        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4, 3);
 
         glUniformMatrix4fv(locShadeView, false, camera.getViewMatrix().floatArray());
 
@@ -275,6 +274,7 @@ public class Renderer extends AbstractRenderer {
         String triangle;
         String light;
         String plane;
+        String texture;
 
         switch (displayMode) {
             case 0 -> display = "Fill";
@@ -311,12 +311,18 @@ public class Renderer extends AbstractRenderer {
             case 1 -> plane = "On";
             default -> throw new IllegalStateException("Unexpected value: " + mode);
         }
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 80, "Mode: " + display);
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 65, "Camera: " + camera);
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 50, "Animation: " + anim);
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 35, "Triangle mode: " + triangle);
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 20, "Light mode: " + light);
-        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 5, "Planes: " + plane);
+        switch (textureMode) {
+            case 0 -> texture = "Off";
+            case 1 -> texture = "On";
+            default -> throw new IllegalStateException("Unexpected value: " + mode);
+        }
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 95, "Mode: " + display);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 80, "Camera: " + camera);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 65, "Animation: " + anim);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 50, "Triangle mode: " + triangle);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 35, "Light mode: " + light);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 20, "Planes: " + plane);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 5, "Texture : " + texture);
 
     }
 

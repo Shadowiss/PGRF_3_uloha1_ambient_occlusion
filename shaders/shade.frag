@@ -11,7 +11,6 @@ layout (binding=2) uniform sampler2D depthTexture;
 layout (binding=3) uniform sampler2D ssaoTexture;
 layout (binding=4) uniform sampler2D imageTexture;
 
-uniform sampler2D texture1;
 uniform mat4 view;
 uniform mat4 rotZ;
 vec3 lightPosition;
@@ -76,6 +75,7 @@ void main() {
                 outColor=ambient;
             }
             break;
+        // Texture
         case 5 :
         finalColor = ambient + diffuse + specular;
         outColor = finalColor * textureColor;
