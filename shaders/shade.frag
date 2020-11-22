@@ -4,30 +4,27 @@ uniform int lightMode;
 out vec4 outColor;
 
 const float PI = 3.1415;
-//uniform sampler2D texture1;
 
 layout (binding=0) uniform sampler2D positionTexture;
 layout (binding=1) uniform sampler2D normalTexture;
 layout (binding=2) uniform sampler2D depthTexture;
 layout (binding=3) uniform sampler2D ssaoTexture;
 layout (binding=4) uniform sampler2D imageTexture;
+//uniform sampler2D texture1;
 uniform mat4 view;
 uniform mat3 rotY;
+uniform mat4 rotZ;
 uniform float time;
-
 //uniform float spotCutOff;
 //uniform vec3 spotDirection;
-
-
-
 //uniform vec3 light;
 vec3 lightPosition;
 
 void main() {
     if(lightMode <4 && lightMode >-1){
-        lightPosition = vec3(10, 10, 10)  * rotY;
+        lightPosition = vec3(1,1,1)  * vec3(rotZ);
     }else{
-        lightPosition = vec3(10, 10, 10);
+        lightPosition = vec3(1, 1, 1) * vec3(rotZ); ;
     }
 
     vec3 position = texture(positionTexture, texCoord).xyz;
@@ -56,7 +53,7 @@ void main() {
 
     if(lightMode == 0){
         finalColor = ambient + diffuse + specular;
-        outColor = finalColor * color;// * textureColor;
+        outColor = finalColor * color; // * textureColor;
     }
     else if(lightMode == 1){
         finalColor = ambient;
@@ -72,12 +69,14 @@ void main() {
     }
     else if(lightMode == 4){
         float spotCutOff = 0.1;
-        vec3 spotDirection = vec3(-5, -3, -1) * (rotY*0.000000001);
+        //vec3 spotDirection = normalize((vec3(1)*vec3(rotZ)) - position);
+        vec3 spotDirection = -vec3(1, 1, 1); // * vec3(rotZ);
 
         float dist=length(light);
         //float spotCutOff = 0.7;
 
         float att = 1.0/(1.0+0.02*dist+0.01*(dist*dist));
+        //float att = 1.0/(0.7 * dist);
         float spotEffect = max(dot(normalize(spotDirection),normalize(-light)),0);
         float blend = clamp((spotEffect-spotCutOff)/(1-spotCutOff),0.0,1.0);
 

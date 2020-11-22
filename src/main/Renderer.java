@@ -18,7 +18,8 @@ public class Renderer extends AbstractRenderer {
 
     private int sceneProgram, ssaoProgram, shadeProgram, objProgram;
     private int locSceneView, locSceneProjection, locSceneTemp,
-            locSsaoProjection, locShadeView, locSceneTime, locShadeLight, locObjMat, locSceneTime2, locLightRotY;
+            locSsaoProjection, locShadeView, locSceneTime, locShadeLight, locObjMat, locSceneTime2,
+             locLightRotZ1 ,locLightRotZ2 , locScale;
 
 //    private int locView, locProjection, locTemp, locLightPos, locTime;
 //    private int locView2, locProjection2;
@@ -52,7 +53,8 @@ public class Renderer extends AbstractRenderer {
             0, 1, 0, 0,
             0, 0, 0, 1,
     });
-    private Mat3RotY rotY = new Mat3RotY(Math.toRadians(radians));
+    private Mat4RotZ rotZ = new Mat4RotZ(Math.toRadians(radians));
+    private Mat4Scale scale = new Mat4Scale(2);
 
     @Override
     public void init() {
@@ -68,7 +70,8 @@ public class Renderer extends AbstractRenderer {
         locSceneProjection = glGetUniformLocation(sceneProgram, "projection");
         locSceneTemp = glGetUniformLocation(sceneProgram, "temp");
         locSceneTime = glGetUniformLocation(sceneProgram, "time");
-
+        locLightRotZ1 = glGetUniformLocation(sceneProgram, "rotZ");
+        locScale = glGetUniformLocation(sceneProgram, "scale");
 
         ssaoProgram = ShaderUtils.loadProgram("/ssao");
         locSsaoProjection = glGetUniformLocation(ssaoProgram, "projection");
@@ -77,7 +80,7 @@ public class Renderer extends AbstractRenderer {
         locShadeView = glGetUniformLocation(shadeProgram, "view");
         locShadeLight = glGetUniformLocation(shadeProgram, "lightMode");
         locSceneTime2 = glGetUniformLocation(shadeProgram, "time");
-        locLightRotY = glGetUniformLocation(shadeProgram, "rotY");
+        locLightRotZ2 = glGetUniformLocation(shadeProgram, "rotZ");
 
         objProgram = ShaderUtils.loadProgram("/ducky");
         locObjMat = glGetUniformLocation(objProgram, "mat");
@@ -133,7 +136,7 @@ public class Renderer extends AbstractRenderer {
             if (radians > 360) {
                 radians = 0;
             }else{
-                radians += 0.1;
+                radians += 0.05;
             }
 
         }
@@ -173,6 +176,8 @@ public class Renderer extends AbstractRenderer {
 
         glUniformMatrix4fv(locObjMat, false,
                 ToFloatArray.convert(swapYZ.mul(camera.getViewMatrix()).mul(projection)));
+        glUniformMatrix4fv(locLightRotZ1,false, rotZ.floatArray());
+        glUniformMatrix4fv(locScale,false, scale.floatArray());
 
         switch (ducky) {
             case 1 ->{buffers = model.getBuffers();
@@ -234,14 +239,13 @@ public class Renderer extends AbstractRenderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUniform1i(locShadeLight, lightMode);
-        rotY = new Mat3RotY(radians);
+        rotZ = new Mat4RotZ(radians);
 
-        glUniformMatrix3fv(locLightRotY,false, rotY.floatArray());
+        glUniformMatrix4fv(locLightRotZ2,false, rotZ.floatArray());
         glUniform1f(locSceneTime2, time);
         glUniform1i(locShadeLight, lightMode);
-        //texture1.bind(shadeProgram, "texture1");
 
-
+        //texture1.bind(shadeProgram, "texture1", 4);
         sceneRT.bindColorTexture(shadeProgram, "positionTexture", 0, 0);
         sceneRT.bindColorTexture(shadeProgram, "normalTexture", 1, 1);
         sceneRT.bindDepthTexture(shadeProgram, "depthTexture", 2);

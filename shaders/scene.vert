@@ -6,6 +6,8 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform int temp;
 uniform float time;
+uniform mat4 rotZ;
+uniform mat4 scale;
 
 out vec3 normalMS;// MS = model space
 out vec3 normalVS;// VS = view space
@@ -14,6 +16,7 @@ out vec2 texCoord;
 //out vec3 viewDirection;
 
 const float PI = 3.1415;
+
 
 vec3 getSphere(vec2 pos) {
     float az = pos.x * PI;// souřadnice z gridu je v <-1;1> a chceme v rozsahu <-PI;PI>
@@ -221,9 +224,11 @@ void main() {
         normal = getPlane2Normal(position);
         break;
         case 10:
+        vec3 lightPosition= vec3(1);
         pos3 = getSphere(position);
-        pos3 =  vec3(pos3.x + 100, pos3.y, pos3.z);
-        normal = getSphereNormal(position);
+        pos3 = vec3(pos3.x/2, pos3.y/2, pos3.z/2);
+        pos3 = vec3(rotZ  *  vec4(pos3 + vec3(lightPosition),1.0));
+        normal = vec3(0); //getSphereNormal(position);
         break;
     }
 
