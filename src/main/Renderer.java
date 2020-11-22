@@ -15,7 +15,7 @@ public class Renderer extends AbstractRenderer {
     private int sceneProgram, ssaoProgram, shadeProgram, objProgram;
     private int locSceneView, locSceneProjection, locSceneTemp,
             locSsaoProjection, locShadeView, locShadeLight, locObjMat,
-            locLightRotZ1, locLightRotZ2;
+            locLightRotZ1, locLightRotZ2, locSceneLight, locSceneTexture;
 
     private Camera camera;
     private Mat4 projection;
@@ -33,6 +33,7 @@ public class Renderer extends AbstractRenderer {
     private int lightMode = 0;
     private int ducky = 0;
     private float radians = 0;
+    private int textureMode = 1;
 
     private OGLModelOBJ model;
     Mat4 swapYZ = new Mat4(new double[]{
@@ -57,6 +58,8 @@ public class Renderer extends AbstractRenderer {
         locSceneProjection = glGetUniformLocation(sceneProgram, "projection");
         locSceneTemp = glGetUniformLocation(sceneProgram, "temp");
         locLightRotZ1 = glGetUniformLocation(sceneProgram, "rotZ");
+        locSceneLight = glGetUniformLocation(sceneProgram, "lightMode");
+        locSceneTexture = glGetUniformLocation(sceneProgram, "textureMode");
 
         ssaoProgram = ShaderUtils.loadProgram("/ssao");
         locSsaoProjection = glGetUniformLocation(ssaoProgram, "projection");
@@ -86,7 +89,7 @@ public class Renderer extends AbstractRenderer {
         viewer = new OGLTexture2D.Viewer();
 
         final int size = 1024;
-        sceneRT = new OGLRenderTarget(size, size, 4);
+        sceneRT = new OGLRenderTarget(size, size, 5);
         ssaoRT = new OGLRenderTarget(size, size);
         randomTexture = RandomTextureGenerator.getTexture();
     }
@@ -127,13 +130,13 @@ public class Renderer extends AbstractRenderer {
         viewer.view(sceneRT.getDepthTexture(), -0.5, -1, 0.5);
         viewer.view(ssaoRT.getColorTexture(), -1, 0.5, 0.5);
 
-
         /*
           Renders text in window
          */
         textRenderer.addStr2D(15, 20, "Camera [MOUSE], Movement [WASD],Change camera(persp,ortho) [C], Fill,line,dot [1(non numeric)]," +
                 " Animation(on/off) [2(non numeric)], Triangle(list/strip) [T]," +
                 "Change object [O], Show ducky [Y], Change light [X], Show plane [M]");
+        textRenderer.addStr2D(15, 35, "If in LightMode 5 (Texture and Blinn-phong) hide texture [U]");
         setString();
         textRenderer.addStr2D(LwjglWindow.WIDTH - 190, LwjglWindow.HEIGHT - 3, "PGRF - Jirasek Jiri 2020");
     }
@@ -162,6 +165,9 @@ public class Renderer extends AbstractRenderer {
         glUniformMatrix4fv(locSceneProjection, false, projection.floatArray());
         glUniformMatrix4fv(locObjMat, false, ToFloatArray.convert(swapYZ.mul(camera.getViewMatrix()).mul(projection)));
         glUniformMatrix4fv(locLightRotZ1, false, rotZ.floatArray());
+        glUniform1i(locSceneTemp, object);
+        glUniform1i(locSceneLight, lightMode);
+        glUniform1i(locSceneTexture, textureMode);
         /*
         Switch between ducky and objects + mode ( with plane or without plane)
          */
@@ -171,9 +177,9 @@ public class Renderer extends AbstractRenderer {
                 buffers.draw(model.getTopology(), objProgram);
             }
             case 0 -> {
-                glUniform1i(locSceneTemp, object);
+
                 texture1.bind(sceneProgram, "texture1", 0);
-                sceneRT.bindColorTexture(sceneProgram, "outColor3", 3);
+//                sceneRT.getColorTexture().bind(sceneProgram, "texture1", 5);
                 setTriangleMode();
                 glUniform1i(locSceneTemp, 10);
                 setTriangleMode();
@@ -232,12 +238,11 @@ public class Renderer extends AbstractRenderer {
         glUniformMatrix4fv(locLightRotZ2, false, rotZ.floatArray());
         glUniform1i(locShadeLight, lightMode);
 
-        texture1.bind(shadeProgram, "texture1", 4);
         sceneRT.bindColorTexture(shadeProgram, "positionTexture", 0, 0);
         sceneRT.bindColorTexture(shadeProgram, "normalTexture", 1, 1);
         sceneRT.bindDepthTexture(shadeProgram, "depthTexture", 2);
         ssaoRT.bindColorTexture(shadeProgram, "ssaoTexture", 3, 0);
-        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4, 3);
+        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4, 4);
 
         glUniformMatrix4fv(locShadeView, false, camera.getViewMatrix().floatArray());
 
@@ -298,6 +303,7 @@ public class Renderer extends AbstractRenderer {
             case 2 -> light = "Ambient + Diffuse";
             case 3 -> light = "Ambient + Diffuse + Specular";
             case 4 -> light = "Reflector";
+            case 5 -> light = "Texture + Blinn-Phong";
             default -> throw new IllegalStateException("Unexpected value: " + lightMode);
         }
         switch (mode) {
@@ -432,7 +438,7 @@ public class Renderer extends AbstractRenderer {
                         }
                     }
                     case GLFW_KEY_X -> {
-                        if (lightMode == 4)
+                        if (lightMode == 5)
                             lightMode = 0;
                         else {
                             lightMode += 1;
@@ -443,6 +449,13 @@ public class Renderer extends AbstractRenderer {
                             ducky = 0;
                         else {
                             ducky += 1;
+                        }
+                    }
+                    case GLFW_KEY_U -> {
+                        if (textureMode == 1)
+                            textureMode = 0;
+                        else {
+                            textureMode += 1;
                         }
                     }
                 }

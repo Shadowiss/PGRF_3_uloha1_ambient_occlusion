@@ -3,6 +3,7 @@ in vec2 texCoord;
 uniform int lightMode;
 out vec4 outColor;
 const float PI = 3.1415;
+uniform int temp;
 
 layout (binding=0) uniform sampler2D positionTexture;
 layout (binding=1) uniform sampler2D normalTexture;
@@ -35,7 +36,7 @@ void main() {
     float NdotH = max(0.0, dot(normalize(normal), halfD));
     vec4 specular = vec4(pow(NdotH, 8) * vec3(1), 1);
 
-    //vec4 textureColor = texture(texture1, texCoord);
+    vec4 textureColor = texture(imageTexture, texCoord);
     vec4 color = vec4(0.0, 1.0, 0.0, 1.0);
 
 //Chosing which color model will be applied
@@ -43,7 +44,7 @@ void main() {
         //Blinn-phong + color
         case 0 :
             finalColor = ambient + diffuse + specular;
-            outColor = finalColor * color;
+            outColor = finalColor * textureColor;// * color;
             break;
         // Ambient
         case 1 :
@@ -75,5 +76,9 @@ void main() {
                 outColor=ambient;
             }
             break;
+        case 5 :
+        finalColor = ambient + diffuse + specular;
+        outColor = finalColor * textureColor;
+        break;
     }
 }
