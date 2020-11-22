@@ -3,42 +3,30 @@ package main;
 import lwjglutils.*;
 import org.lwjgl.glfw.*;
 import transforms.*;
-
 import java.io.IOException;
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
 public class Renderer extends AbstractRenderer {
-
-    //private int shaderProgram1, shaderProgram2;
     private OGLBuffers buffers, quad;
 
     private int sceneProgram, ssaoProgram, shadeProgram, objProgram;
     private int locSceneView, locSceneProjection, locSceneTemp,
-            locSsaoProjection, locShadeView, locSceneTime, locShadeLight, locObjMat, locSceneTime2,
-             locLightRotZ1 ,locLightRotZ2 , locScale;
-
-//    private int locView, locProjection, locTemp, locLightPos, locTime;
-//    private int locView2, locProjection2;
+            locSsaoProjection, locShadeView, locShadeLight, locObjMat,
+            locLightRotZ1, locLightRotZ2;
 
     private Camera camera;
-    private Camera cameraLight;
     private Mat4 projection;
-
     private OGLTexture2D texture1;
     private OGLTexture2D.Viewer viewer;
-    //    private OGLRenderTarget renderTarget;
     private OGLRenderTarget sceneRT, ssaoRT;
     private OGLTexture2D randomTexture;
 
-    private int displayMode=0;
+    private int displayMode = 0;
     private int object = 1;
     private int triangleMode = 0;
-    private float time = 1;
-    private double difftime=0.01;
     private int animation = 1;
     private int cameraMode = 0;
     private int mode = 0;
@@ -47,14 +35,13 @@ public class Renderer extends AbstractRenderer {
     private float radians = 0;
 
     private OGLModelOBJ model;
-    Mat4 swapYZ = new Mat4(new double[] {
+    Mat4 swapYZ = new Mat4(new double[]{
             1, 0, 0, 0,
             0, 0, 1, 0,
             0, 1, 0, 0,
             0, 0, 0, 1,
     });
     private Mat4RotZ rotZ = new Mat4RotZ(Math.toRadians(radians));
-    private Mat4Scale scale = new Mat4Scale(2);
 
     @Override
     public void init() {
@@ -69,9 +56,7 @@ public class Renderer extends AbstractRenderer {
         locSceneView = glGetUniformLocation(sceneProgram, "view");
         locSceneProjection = glGetUniformLocation(sceneProgram, "projection");
         locSceneTemp = glGetUniformLocation(sceneProgram, "temp");
-        locSceneTime = glGetUniformLocation(sceneProgram, "time");
         locLightRotZ1 = glGetUniformLocation(sceneProgram, "rotZ");
-        locScale = glGetUniformLocation(sceneProgram, "scale");
 
         ssaoProgram = ShaderUtils.loadProgram("/ssao");
         locSsaoProjection = glGetUniformLocation(ssaoProgram, "projection");
@@ -79,7 +64,6 @@ public class Renderer extends AbstractRenderer {
         shadeProgram = ShaderUtils.loadProgram("/shade");
         locShadeView = glGetUniformLocation(shadeProgram, "view");
         locShadeLight = glGetUniformLocation(shadeProgram, "lightMode");
-        locSceneTime2 = glGetUniformLocation(shadeProgram, "time");
         locLightRotZ2 = glGetUniformLocation(shadeProgram, "rotZ");
 
         objProgram = ShaderUtils.loadProgram("/ducky");
@@ -92,105 +76,108 @@ public class Renderer extends AbstractRenderer {
                 .withAzimuth(5 / 4f * Math.PI) // otočení do strany o (180+45) stupňů v radiánech
                 .withZenith(-1 / 5f * Math.PI); // otočení (90/5) stupňů dolů
 
-        cameraLight = new Camera().withPosition(new Vec3D(-5, -3, -1));
-
-
-
-
         try {
-            texture1 = new OGLTexture2D("./textures/mosaic.jpg");
+            texture1 = new OGLTexture2D("./textures/earth.jpg");
             model = new OGLModelOBJ("/obj/ducky.obj");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //buffers = model.getBuffers();
 
         viewer = new OGLTexture2D.Viewer();
 
-        //renderTarget = new OGLRenderTarget(1024, 1024);
         final int size = 1024;
         sceneRT = new OGLRenderTarget(size, size, 4);
         ssaoRT = new OGLRenderTarget(size, size);
-
         randomTexture = RandomTextureGenerator.getTexture();
     }
 
     @Override
     public void display() {
         glEnable(GL_DEPTH_TEST);
+        /*
+        Switch between camera mode
+         */
         switch (cameraMode) {
             case 0 -> projection = new Mat4PerspRH(Math.PI / 3, 600 / 800f, 1, 20);
             case 1 -> projection = new Mat4OrthoRH(10, 7, 1, 20);
         }
-        //time for animation
-        if(animation == 1) {
-            if (time > 2.0) {
-                difftime = (-0.01);
-            }
-            if (time < 1.0) {
-                difftime = 0.01;
-            }
-            time += difftime;
-        }
-        if(animation == 1) {
+        /*
+        Animation
+         */
+        if (animation == 1) {
             if (radians > 360) {
                 radians = 0;
-            }else{
+            } else {
                 radians += 0.05;
             }
-
         }
-
+        /*
+        Render scene + grid mode
+         */
         setTriangleMode();
         renderScene();
         renderSSAO();
         renderFinal();
-
+        /*
+        Small windows
+         */
         viewer.view(sceneRT.getColorTexture(0), -1, 0, 0.5);
         viewer.view(sceneRT.getColorTexture(1), -1, -0.5, 0.5);
         viewer.view(sceneRT.getColorTexture(2), -1, -1, 0.5);
         viewer.view(sceneRT.getDepthTexture(), -0.5, -1, 0.5);
         viewer.view(ssaoRT.getColorTexture(), -1, 0.5, 0.5);
 
+
+        /*
+          Renders text in window
+         */
+        textRenderer.addStr2D(15, 20, "Camera [MOUSE], Movement [WASD],Change camera(persp,ortho) [C], Fill,line,dot [1(non numeric)]," +
+                " Animation(on/off) [2(non numeric)], Triangle(list/strip) [T]," +
+                "Change object [O], Show ducky [Y], Change light [X], Show plane [M]");
+        setString();
         textRenderer.addStr2D(LwjglWindow.WIDTH - 190, LwjglWindow.HEIGHT - 3, "PGRF - Jirasek Jiri 2020");
     }
 
     private void renderScene() {
-        switch (ducky){
+        /*
+        Switch between ducky program or object program
+         */
+        switch (ducky) {
             case 0 -> glUseProgram(sceneProgram);
             case 1 -> glUseProgram(objProgram);
         }
-        //glUseProgram(objProgram);
-
-        switch (displayMode){
+        /*
+        Switch between FILL/LINE/DOT style
+         */
+        switch (displayMode) {
             case 0 -> glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             case 1 -> glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             case 2 -> glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         }
+
         sceneRT.bind();
         glClearColor(0.4f, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glUniformMatrix4fv(locSceneView, false, camera.getViewMatrix().floatArray());
         glUniformMatrix4fv(locSceneProjection, false, projection.floatArray());
-
-        glUniformMatrix4fv(locObjMat, false,
-                ToFloatArray.convert(swapYZ.mul(camera.getViewMatrix()).mul(projection)));
-        glUniformMatrix4fv(locLightRotZ1,false, rotZ.floatArray());
-        glUniformMatrix4fv(locScale,false, scale.floatArray());
-
+        glUniformMatrix4fv(locObjMat, false, ToFloatArray.convert(swapYZ.mul(camera.getViewMatrix()).mul(projection)));
+        glUniformMatrix4fv(locLightRotZ1, false, rotZ.floatArray());
+        /*
+        Switch between ducky and objects + mode ( with plane or without plane)
+         */
         switch (ducky) {
-            case 1 ->{buffers = model.getBuffers();
-                buffers.draw(model.getTopology(), objProgram);}
-            case 0 ->{
-
-                glUniform1f(locSceneTime, time);
+            case 1 -> {
+                buffers = model.getBuffers();
+                buffers.draw(model.getTopology(), objProgram);
+            }
+            case 0 -> {
                 glUniform1i(locSceneTemp, object);
+                texture1.bind(sceneProgram, "texture1", 0);
+                sceneRT.bindColorTexture(sceneProgram, "outColor3", 3);
                 setTriangleMode();
                 glUniform1i(locSceneTemp, 10);
                 setTriangleMode();
-                texture1.bind(sceneProgram, "texture1", 0);
-                if(mode == 1) {
+                if (mode == 1) {
                     glUniform1i(locSceneTemp, 8);
                     setTriangleMode();
                     glUniform1i(locSceneTemp, 9);
@@ -202,8 +189,10 @@ public class Renderer extends AbstractRenderer {
 
     private void renderSSAO() {
         glUseProgram(ssaoProgram);
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        switch (displayMode){
+        /*
+        Switch between FILL/LINE/DOT style
+         */
+        switch (displayMode) {
             case 0 -> glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             case 1 -> glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             case 2 -> glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
@@ -240,31 +229,89 @@ public class Renderer extends AbstractRenderer {
 
         glUniform1i(locShadeLight, lightMode);
         rotZ = new Mat4RotZ(radians);
-
-        glUniformMatrix4fv(locLightRotZ2,false, rotZ.floatArray());
-        glUniform1f(locSceneTime2, time);
+        glUniformMatrix4fv(locLightRotZ2, false, rotZ.floatArray());
         glUniform1i(locShadeLight, lightMode);
 
-        //texture1.bind(shadeProgram, "texture1", 4);
+        texture1.bind(shadeProgram, "texture1", 4);
         sceneRT.bindColorTexture(shadeProgram, "positionTexture", 0, 0);
         sceneRT.bindColorTexture(shadeProgram, "normalTexture", 1, 1);
         sceneRT.bindDepthTexture(shadeProgram, "depthTexture", 2);
         ssaoRT.bindColorTexture(shadeProgram, "ssaoTexture", 3, 0);
-        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4,3);
-
+        sceneRT.bindColorTexture(shadeProgram, "imageTexture", 4, 3);
 
         glUniformMatrix4fv(locShadeView, false, camera.getViewMatrix().floatArray());
 
         quad.draw(GL_TRIANGLES, shadeProgram);
     }
 
-    private void setTriangleMode(){
-        switch (triangleMode){
-            case 0 -> {buffers = GridFactory.generateGrid(50, 50, triangleMode);
-                buffers.draw(GL_TRIANGLES, sceneProgram);}
-            case 1 ->{ buffers = GridFactory.generateGrid(50, 50, triangleMode);
-                buffers.draw(GL_TRIANGLE_STRIP, sceneProgram);}
+    /**
+     * Method that sets mode of grid. Defines which index buffer is used (Triangle List/Strip) and generates new grid
+     */
+    private void setTriangleMode() {
+        switch (triangleMode) {
+            case 0 -> {
+                buffers = GridFactory.generateGrid(50, 50, triangleMode);
+                buffers.draw(GL_TRIANGLES, sceneProgram);
+            }
+            case 1 -> {
+                buffers = GridFactory.generateGrid(50, 50, triangleMode);
+                buffers.draw(GL_TRIANGLE_STRIP, sceneProgram);
+            }
         }
+    }
+
+    /**
+     * Generates string which function is active "Plane: On/Off etc..."
+     */
+    private void setString() {
+        String display;
+        String camera;
+        String anim;
+        String triangle;
+        String light;
+        String plane;
+
+        switch (displayMode) {
+            case 0 -> display = "Fill";
+            case 1 -> display = "Line";
+            case 2 -> display = "Dot";
+            default -> throw new IllegalStateException("Unexpected value: " + displayMode);
+        }
+        switch (cameraMode) {
+            case 0 -> camera = "Persp";
+            case 1 -> camera = "Ortho";
+            default -> throw new IllegalStateException("Unexpected value: " + cameraMode);
+        }
+        switch (animation) {
+            case 0 -> anim = "off";
+            case 1 -> anim = "on";
+            default -> throw new IllegalStateException("Unexpected value: " + animation);
+        }
+        switch (triangleMode) {
+            case 0 -> triangle = "List";
+            case 1 -> triangle = "Strip";
+            default -> throw new IllegalStateException("Unexpected value: " + triangleMode);
+        }
+        switch (lightMode) {
+            case 0 -> light = "Blinn-Phong(A,D,S) + color";
+            case 1 -> light = "Ambient";
+            case 2 -> light = "Ambient + Diffuse";
+            case 3 -> light = "Ambient + Diffuse + Specular";
+            case 4 -> light = "Reflector";
+            default -> throw new IllegalStateException("Unexpected value: " + lightMode);
+        }
+        switch (mode) {
+            case 0 -> plane = "Off";
+            case 1 -> plane = "On";
+            default -> throw new IllegalStateException("Unexpected value: " + mode);
+        }
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 80, "Mode: " + display);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 65, "Camera: " + camera);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 50, "Animation: " + anim);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 35, "Triangle mode: " + triangle);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 20, "Light mode: " + light);
+        textRenderer.addStr2D(LwjglWindow.WIDTH / 2 + 5, LwjglWindow.HEIGHT - 5, "Planes: " + plane);
+
     }
 
     @Override
@@ -294,12 +341,12 @@ public class Renderer extends AbstractRenderer {
         @Override
         public void invoke(long window, int w, int h) {
             if (w > 0 && h > 0 &&
-                    (w != width || h != height)) {
-                width = w;
-                height = h;
-                projection = new Mat4PerspRH(Math.PI / 4, height / (double) width, 0.1, 100.0);
+                    (w != LwjglWindow.WIDTH || h != LwjglWindow.HEIGHT)) {
+                LwjglWindow.WIDTH = w;
+                LwjglWindow.HEIGHT = h;
+                projection = new Mat4PerspRH(Math.PI / 4, LwjglWindow.WIDTH / (double) LwjglWindow.HEIGHT, 0.1, 100.0);
                 if (textRenderer != null)
-                    textRenderer.resize(width, height);
+                    textRenderer.resize(LwjglWindow.WIDTH, LwjglWindow.HEIGHT);
             }
         }
     };
@@ -342,46 +389,61 @@ public class Renderer extends AbstractRenderer {
                     case GLFW_KEY_R -> camera = camera.up(0.1);
                     case GLFW_KEY_F -> camera = camera.down(0.1);
                     case GLFW_KEY_1 -> {
-                        if(displayMode == 2)
-                            displayMode=0;
-                        else{displayMode += 1;}
+                        if (displayMode == 2)
+                            displayMode = 0;
+                        else {
+                            displayMode += 1;
+                        }
+
                     }
                     case GLFW_KEY_2 -> {
-                        if(animation == 1)
-                            animation=0;
-                        else{animation += 1;}
+                        if (animation == 1)
+                            animation = 0;
+                        else {
+                            animation += 1;
+                        }
                     }
                     case GLFW_KEY_O -> {
-                        if(object == 7)
+                        if (object == 7)
                             object = 1;
-                        else{object += 1;}
+                        else {
+                            object += 1;
+                        }
                     }
                     case GLFW_KEY_T -> {
-                        if(triangleMode == 1) {
+                        if (triangleMode == 1) {
                             triangleMode = 0;
+                        } else {
+                            triangleMode += 1;
                         }
-                        else{triangleMode += 1;
-                            }
                     }
                     case GLFW_KEY_C -> {
-                        if(cameraMode == 1)
+                        if (cameraMode == 1)
                             cameraMode = 0;
-                        else{cameraMode += 1;}
+                        else {
+                            cameraMode += 1;
+                        }
                     }
                     case GLFW_KEY_M -> {
-                        if(mode == 1)
+                        if (mode == 1)
                             mode = 0;
-                        else{mode += 1;}
+                        else {
+                            mode += 1;
+                        }
                     }
                     case GLFW_KEY_X -> {
-                        if(lightMode == 4)
+                        if (lightMode == 4)
                             lightMode = 0;
-                        else{lightMode += 1;}
+                        else {
+                            lightMode += 1;
+                        }
                     }
                     case GLFW_KEY_Z -> {
-                        if(ducky == 1)
+                        if (ducky == 1)
                             ducky = 0;
-                        else{ducky += 1;}
+                        else {
+                            ducky += 1;
+                        }
                     }
                 }
             }

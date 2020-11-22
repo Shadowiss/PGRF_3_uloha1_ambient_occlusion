@@ -5,7 +5,6 @@ in vec2 inPosition;// input from the vertex buffer
 uniform mat4 view;
 uniform mat4 projection;
 uniform int temp;
-uniform float time;
 uniform mat4 rotZ;
 uniform mat4 scale;
 
@@ -13,11 +12,10 @@ out vec3 normalMS;// MS = model space
 out vec3 normalVS;// VS = view space
 out vec4 positionVS;// VS = view space
 out vec2 texCoord;
-//out vec3 viewDirection;
 
 const float PI = 3.1415;
 
-
+//Object functions
 vec3 getSphere(vec2 pos) {
     float az = pos.x * PI;// souřadnice z gridu je v <-1;1> a chceme v rozsahu <-PI;PI>
     float ze = pos.y * PI / 2;// souřadnice z gridu je v <-1;1> a chceme v rozsahu <-PI/2;PI/2>
@@ -25,39 +23,32 @@ vec3 getSphere(vec2 pos) {
 
     float x = r * cos(az) * cos(ze);
     float y = r * sin(az) * cos(ze);
-    float z = r * sin(ze) ;
+    float z = r * sin(ze);
 
     return vec3(x/2, y/2, z/2);
 }
-
 vec3 getSphereNormal(vec2 pos) {
     vec3 u = getSphere(pos + vec2(0.001, 0)) - getSphere(pos - vec2(0.001, 0));
     vec3 v = getSphere(pos + vec2(0, 0.001)) - getSphere(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
 vec3 getPlane(vec2 pos) {
     return vec3(-1, pos.x, pos.y);
 }
-
 vec3 getPlaneNormal(vec2 pos) {
     vec3 u = getPlane(pos + vec2(0.001, 0)) - getPlane(pos - vec2(0.001, 0));
     vec3 v = getPlane(pos + vec2(0, 0.001)) - getPlane(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
 vec3 getPlane2(vec2 pos) {
     return vec3(pos.x, pos.y, -1);
 }
-
 vec3 getPlane2Normal(vec2 pos) {
     vec3 u = getPlane2(pos + vec2(0.001, 0)) - getPlane2(pos - vec2(0.001, 0));
     vec3 v = getPlane2(pos + vec2(0, 0.001)) - getPlane2(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
-vec3 getFunctionCM(vec2 pos)
-{
+vec3 getFunctionCM(vec2 pos){
     float t = pos.x* 2.0*PI;
     float s = pos.y * 2.0*PI;
 
@@ -71,7 +62,6 @@ vec3 getNormalFunctionCM(vec2 pos){
     vec3 v = getFunctionCM(pos + vec2(0, 0.001)) - getFunctionCM(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
 vec3 getFunctionC(vec2 pos){
     float t = pos.x* 2.0*PI;
     float s = pos.y * 2.0*PI;
@@ -85,9 +75,7 @@ vec3 getNormalFunctionC(vec2 pos){
     vec3 v = getFunctionC(pos + vec2(0, 0.001)) - getFunctionC(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
-vec3 getFunctionS(vec2 pos)
-{
+vec3 getFunctionS(vec2 pos){
     float t = PI*pos.x;
     float s = 2*PI*pos.y;
     float r = 1;
@@ -104,9 +92,7 @@ vec3 getNormalFunctionS(vec2 pos){
     vec3 v = getFunctionS(pos + vec2(0, 0.001)) - getFunctionS(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
-vec3 getFunctionS2(vec2 pos)
-{
+vec3 getFunctionS2(vec2 pos){
     float t = PI*pos.x;
     float s = 2*PI*pos.y;
     float r = 3+cos(4*s);
@@ -123,9 +109,7 @@ vec3 getNormalFunctionS2(vec2 pos){
     vec3 v = getFunctionS2(pos + vec2(0, 0.001)) - getFunctionS2(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
-vec3 getFunctionCyl(vec2 pos)
-{
+vec3 getFunctionCyl(vec2 pos){
     float s = 2*PI * pos.x;
     float t = 2*PI * pos.y;
     float theta = s;
@@ -141,9 +125,7 @@ vec3 getNormalFunctionCyl(vec2 pos){
     vec3 v = getFunctionCyl(pos + vec2(0, 0.001)) - getFunctionCyl(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
-vec3 getFunctionCyl2(vec2 pos)
-{
+vec3 getFunctionCyl2(vec2 pos){
     float s = 2*PI * pos.x;
     float t = 2*PI* pos.y;
 
@@ -160,9 +142,8 @@ vec3 getNormalFunctionCyl2(vec2 pos){
     vec3 v = getFunctionCyl2(pos + vec2(0, 0.001)) - getFunctionCyl2(pos - vec2(0, 0.001));
     return cross(u, v);
 }
-
 vec3 getTruncatedCone(vec2 pos){
-    float u = (pos.x + 1) ;// grid<-1;1>, - > <0;3>
+    float u = (pos.x + 1);// grid<-1;1>, - > <0;3>
     float v = (pos.y + 1) * PI;// gridu <-1;1> - > <0;2pi>
     float r = 0.5;
     float x = (2-((2 * u)/3)) * cos(v);
@@ -181,42 +162,30 @@ void main() {
     vec2 position = inPosition * 2 - 1;
     vec3 pos3;
     vec3 normal;
-
-//    if (temp == 1) {
-//        pos3 = getSphere(position);
-//        normal = getSphereNormal(position);
-//    } else if (temp == 2) {
-//        pos3 = getPlane(position);
-//        normal = getPlaneNormal(position);
-//    } else if (temp == 3) {
-//        pos3 = getPlane2(position);
-//        normal = getPlane2Normal(position);
-//    }
-
-    switch(temp){
+//Switch between objects
+    switch (temp){
         case 1:  pos3 = getSphere(position);
-                 normal = getSphereNormal(position);
+        normal = getSphereNormal(position);
         break;
         case 2:  pos3 = getFunctionC(position);
-                 normal = getNormalFunctionC(position);
+        normal = getNormalFunctionC(position);
         break;
         case 3:  pos3 = getTruncatedCone(position);
-                 normal = getNormalTruncatedCone(position);
+        normal = getNormalTruncatedCone(position);
         break;
         case 4:  pos3 = getFunctionCyl(position);
-                 normal = getNormalFunctionCyl(position);
+        normal = getNormalFunctionCyl(position);
         break;
         case 5:  pos3 = getFunctionCyl2(position);
-                 normal = getNormalFunctionCyl2(position);
+        normal = getNormalFunctionCyl2(position);
         break;
         case 6:  pos3 = getFunctionS2(position);
-                 normal = getNormalFunctionS2(position);
+        normal = getNormalFunctionS2(position);
         break;
         case 7:  pos3 = getFunctionCM(position);
-                 normal = getNormalFunctionCM(position);
+        normal = getNormalFunctionCM(position);
         break;
-        case 8:
-        pos3 = getPlane(position);
+        case 8:pos3 = getPlane(position);
         normal = getPlaneNormal(position);
         break;
         case 9:
@@ -224,20 +193,16 @@ void main() {
         normal = getPlane2Normal(position);
         break;
         case 10:
+        //Sun
         vec3 lightPosition= vec3(1);
         pos3 = getSphere(position);
         pos3 = vec3(pos3.x/2, pos3.y/2, pos3.z/2);
-        pos3 = vec3(rotZ  *  vec4(pos3 + vec3(lightPosition),1.0));
-        normal = vec3(0); //getSphereNormal(position);
+        pos3 = vec3(rotZ  *  vec4(pos3 + vec3(lightPosition), 1.0));
+        normal = vec3(0);
         break;
     }
-
-    //vec4 pos4 = vec4(pos3 * time , 1.0);
     vec4 pos4 = vec4(pos3, 1.0);
     gl_Position = projection * view * pos4;
-
-//    vec4 pos4 = vec4(pos3, 1.0);
-//    gl_Position = projection * view * pos4;
 
     positionVS = view * pos4;
     normalMS = normal;

@@ -6,9 +6,7 @@ package main;
  * @since 2019-09-02
  */
 public class App {
-
     public static void main(String[] args) {
         new LwjglWindow(new Renderer());
     }
-
 }

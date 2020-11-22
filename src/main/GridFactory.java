@@ -11,7 +11,9 @@ public class GridFactory {
      */
     public static OGLBuffers generateGrid(int a, int b, int mode) {
         OGLBuffers buffer;
-
+        /*
+        Vertex buffer
+         */
         float[] vb = new float[a * b * 2];
         int index = 0;
 
@@ -24,9 +26,9 @@ public class GridFactory {
                 vb[index++] = y;
             }
         }
-
-
-
+        /*
+        Index buffer for triangle list
+         */
         int[] ib = new int[(a - 1) * (b - 1) * 2 * 3];
         int index2 = 0;
 
@@ -41,7 +43,9 @@ public class GridFactory {
                 ib[index2++] = offset + c + a;
             }
         }
-
+        /*
+        Index buffer for Triangle strip
+         */
         int[] ibs = new int[(2*a)*(b)-2];
         int index3 = 0;
         int k;
@@ -77,13 +81,15 @@ public class GridFactory {
         OGLBuffers.Attrib[] attributes = {
              new OGLBuffers.Attrib("inPosition", 2) // 2 floats per vertex
         };
+        /*
+        Switch between IB and IBS
+         */
         switch (mode) {
             case 0 -> buffer = new OGLBuffers(vb, attributes, ib);
             case 1 -> buffer= new OGLBuffers(vb, attributes, ibs);
             default -> throw new IllegalStateException("Unexpected value: " + mode);
         }
         return buffer;
-        //return new OGLBuffers(vb, attributes, ib);
     }
 
 }
